@@ -340,6 +340,7 @@ class mw_business_details_shortcodes {
 			if ( $companyName ) { $defaultName = $companyName; };
 			$businessType = get_option( "businessType" );
 			$streetAddress = get_option( "street_address" );
+			$streetAddressTwo = get_option( "street_address_two" );
 			$addressLocality = get_option( "address_locality" );
 			$addressRegion = get_option( "address_region" );
 			$postCode = get_option( "post_code" );
@@ -355,6 +356,7 @@ class mw_business_details_shortcodes {
 				$html .= '<ul class="address">';
 				$html .= '<li itemprop="name"><strong>'.$defaultName.'</strong></li>';
 				$html .= '<li itemprop="streetAddress">'.$streetAddress.'</li>';
+				$html .= '<li itemprop="streetAddress">'.$streetAddressTwo.'</li>';
 				$html .= '<li itemprop="addressLocality">'.$addressLocality.'</li>';
 				$html .= '<li itemprop="addressRegion">'.$addressRegion.'</li>';
 				$html .= '<li itemprop="postalCode">'.$postCode.'</li>';
@@ -390,6 +392,7 @@ class mw_business_details_shortcodes {
 
 		$addressName = get_option("second_address_name");
 		$streetAddress = get_option( "second_street_address" );
+		$streetAddressTwo = get_option( "second_street_address_two" );
 		$addressLocality = get_option( "second_address_locality" );
 		$addressRegion = get_option( "second_address_region" );
 		$postCode = get_option( "second_post_code" );
@@ -411,6 +414,7 @@ class mw_business_details_shortcodes {
 				$html .= '<ul class="address">';
 
 				$html .= '<li>'.$streetAddress.'</li>';
+				$html .= '<li>'.$streetAddressTwo.'</li>';
 				$html .= '<li>'.$addressLocality.'</li>';
 				$html .= '<li>'.$addressRegion.'</li>';
 				$html .= '<li>'.$postCode.'</li>';
@@ -520,6 +524,7 @@ class mw_business_details_shortcodes {
 
 			$businessType = get_option( "businessType" );
 			$streetAddress = get_option( "street_address" );
+			$streetAddressTwo = get_option( "street_address_two" );
 			$addressLocality = get_option( "address_locality" );
 			$addressRegion = get_option( "address_region" );
 			$postCode = get_option( "post_code" );
@@ -604,6 +609,7 @@ class mw_business_details_shortcodes {
 				$html .= '<div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">';
 				$html .= '<ul class="address">';
 				$html .= '<li itemprop="streetAddress">'.$streetAddress.'</li>';
+				$html .= '<li itemprop="streetAddress">'.$streetAddressTwo.'</li>';
 				$html .= '<li itemprop="addressLocality">'.$addressLocality.'</li>';
 				$html .= '<li itemprop="addressRegion">'.$addressRegion.'</li>';
 				$html .= '<li itemprop="postalCode">'.$postCode.'</li>';
@@ -624,6 +630,7 @@ class mw_business_details_shortcodes {
 		return $html;
 		
 	}
+
 
 
 	/*---------------------------------------------------------------------------
