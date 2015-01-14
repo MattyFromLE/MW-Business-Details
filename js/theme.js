@@ -55,7 +55,7 @@ jQuery(document).ready(function( $ ){
     // ======================================================================
 
     $("h2 a:first").addClass("nav-tab-active");
-    $(".postbox:first").delay(250).fadeIn(250);
+    $(".section:first").delay(250).fadeIn(250);
 
     $("h2 a").click(function(){
 

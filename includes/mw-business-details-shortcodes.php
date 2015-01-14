@@ -6,6 +6,7 @@ class mw_business_details_shortcodes {
 		$this->register_shortcodes();
 		add_action('wp_head', array(&$this, 'mw_scripts'), 6);  
 		add_action('wp_head', array(&$this, 'mw_tracking'));  
+		add_action('wp_head', array(&$this, 'mw_social_styles'));  
 		// add_action('wp_head', array(&$this, 'mw_svgToPng')); 
 	}
 
@@ -60,11 +61,9 @@ class mw_business_details_shortcodes {
 
 	}
 
-
 	/*---------------------------------------------------------------------------
 	Company Name
 	---------------------------------------------------------------------------*/
-
 
 	public function mwCompanyName() {
 
@@ -85,11 +84,9 @@ class mw_business_details_shortcodes {
 
 	}
 
-
 	/*---------------------------------------------------------------------------
 	Company Number
 	---------------------------------------------------------------------------*/
-
 
 	public function mwCompanyNumber() {
 
@@ -106,7 +103,6 @@ class mw_business_details_shortcodes {
 
 
 	}
-
 
 	/*---------------------------------------------------------------------------
 	Google Maps
@@ -139,11 +135,11 @@ class mw_business_details_shortcodes {
 				// Enqueue google API for Google Maps
 				wp_register_script( 'add-google-script', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
 				wp_enqueue_script( 'add-google-script' );  
-				wp_register_script( 'maps_scripts', plugins_url('js/min/maps-min.js', __FILE__ ),'','', '' );
+				wp_register_script( 'maps_scripts', plugin_dir_url( dirname(__FILE__) ) . 'js/min/maps-min.js','','', '' );
 				wp_enqueue_script( 'maps_scripts' );				
 
 				// enqueue map styles 
-				wp_enqueue_style( 'mw-frontend-theme', plugins_url('css/mw-business-details-frontend.css', __FILE__ ),'', null );
+				wp_enqueue_style( 'mw-frontend-theme', plugin_dir_url( dirname(__FILE__) ) .'css/mw-business-details-frontend.css','', null );
 
 			}
 
@@ -174,9 +170,6 @@ class mw_business_details_shortcodes {
 
 			// google plus link
 			$googleMapsLink = get_option( "googleMapsLink" );
-
-
-			// var_dump( $pinImage );
 
 			// radius
 			$radiusDistance = get_option('radiusDistance');
@@ -235,6 +228,21 @@ class mw_business_details_shortcodes {
 		}
 	}
 
+	/*---------------------------------------------------------------------------
+	Social Styles
+	---------------------------------------------------------------------------*/
+
+	public function mw_social_styles() {
+
+		$socialStyles = get_option( 'mwSocialStyles' );
+
+		if ( $socialStyles === 'enqueue' ) {
+
+			wp_enqueue_style( 'mw-social-styles', plugin_dir_url( dirname(__FILE__) ) . 'css/mw-business-details-social-styles.css','', null );
+
+		}	
+
+	}
 
 	/*---------------------------------------------------------------------------
 	Tracking JS
@@ -244,28 +252,25 @@ class mw_business_details_shortcodes {
 
 		$tracking = get_option( 'autoTracking' );
 
-		// var_dump($tracking);
-
 		if ( $tracking !== "1" ) {
 
-			wp_register_script( 'tracking_scripts', plugins_url('/js/min/tracking-min.js', __FILE__ ),'','', '' );
+			wp_register_script( 'tracking_scripts', plugin_dir_url( dirname(__FILE__) ) . '/js/min/tracking-min.js','','', '' );
 			wp_enqueue_script( 'tracking_scripts' );
 
 			$showTrackingAlert = get_option( 'showTrackingAlert' ); //var_dump($showTrackingAlert);
 
-					wp_localize_script ('tracking_scripts', 'mw_tracking_vars', array(
+				wp_localize_script ('tracking_scripts', 'mw_tracking_vars', array(
 
 						// plugin url
-						'showTrackingAlert' => __( $showTrackingAlert, 'mw-business-details' )
+					'showTrackingAlert' => __( $showTrackingAlert, 'mw-business-details' )
 
-					)
+				)
 
-				);
-
-			}
+			);
 
 		}
 
+	}
 
 	/*---------------------------------------------------------------------------
 	SVG to PNG // when we drop ie8
@@ -288,17 +293,33 @@ class mw_business_details_shortcodes {
 
 	public function mwSocialLinks( $atts ) {
 			
+		// ============================================================
+		// company name
+		// ============================================================
+
 		$defaultName = get_bloginfo( "name" );
 		$companyName = get_option( "company_name" );
-		if ( $companyName ) { $defaultName = $companyName;};
 		
+		if ( $companyName ) { 
+
+			$defaultName = $companyName;
+
+		};
+		
+		// ============================================================
+		// custom title
+		// ============================================================
+
 		if ( isset( $atts['title'] ) ) {
 
 			$mwTitle = $atts['title'];
 
 		}
 
-		// yoast variables
+		// ============================================================
+		// yoast checks
+		// ============================================================
+
 		$yoastSocial = get_option('wpseo_social'); 
 		$yoastFacebook = $yoastSocial['facebook_site'];
 		$yoastTwitter = $yoastSocial['twitter_site'];
@@ -340,7 +361,7 @@ class mw_business_details_shortcodes {
 		// not included in yoast anyway
 		$mwLinkedIn = get_option('linkedIn');
 
-		if ( $atts['class'] ) { 
+ 		if ( isset($atts['class']) ) { 
 
 			$containerClass = $atts['class']; 
 
@@ -351,12 +372,16 @@ class mw_business_details_shortcodes {
 		};
 
 		$html = ' ';
-		// social
+
+		// ============================================================
+		// social checks
+		// ============================================================
+
 		if ( $mwTwitter || $mwFacebook || $mwLinkedIn || $mwGooglePlus ) { 
 
 		$html .= '<div class="mw-business-details '. $containerClass .'">'; 
 
-		if ( $mwTitle ) {
+		if ( isset($mwTitle) ) {
 
 			$html .= '<p class="h3 schemaTitle">'.$mwTitle.'</p>';
 
@@ -514,7 +539,6 @@ class mw_business_details_shortcodes {
 
 	}
 
-
 	/*---------------------------------------------------------------------------
 	Fax Number
 	---------------------------------------------------------------------------*/
@@ -532,7 +556,6 @@ class mw_business_details_shortcodes {
 	Alternative Number
 	---------------------------------------------------------------------------*/
 
-
 	public function mwAltNumber( $atts ) {
 
 		$altNumber = get_option( "alt_no" );
@@ -546,7 +569,6 @@ class mw_business_details_shortcodes {
 	/*---------------------------------------------------------------------------
 	E-Mail
 	---------------------------------------------------------------------------*/
-
 
 	public function mwEmail( $atts ) {
 
@@ -570,11 +592,9 @@ class mw_business_details_shortcodes {
 		
 	}
 
-
 	/*---------------------------------------------------------------------------
 	Contact Page Schema
 	---------------------------------------------------------------------------*/
-
 
 	public function mwContactPage( $atts ) {
 		
@@ -591,6 +611,7 @@ class mw_business_details_shortcodes {
 			// other 
 			$businessType = get_option( "businessType" );
 			$contactPageText = get_option( "mw-contact-text" );
+			
 			if ( isset( $atts['title'] ) ) {
 
 				$mwTitle = $atts['title'];
@@ -622,13 +643,13 @@ class mw_business_details_shortcodes {
 				// telephones
 				if ( $mainNumber || $altNumber || $faxNumber ) {
 
-					if ( $mwTitle ) {
+					if ( isset($mwTitle) ) {
 
 						$html .= '<p class="schemaTitle h3">'.$mwTitle.'</p>';
 
 					}
 
-					$html .= '<ul class="numbers">';
+					$html .= '<div class="mw-business-details contact-details"><ul class="numbers">';
 
 					$html .= '<li><a itemprop="telephone" href="tel:'.$mainNumberNoBrackets.'" title="Call Today" id="contact-phone">'.$mainNumber.'</a></li>';
 				
@@ -649,7 +670,7 @@ class mw_business_details_shortcodes {
 					
 					}
 					
-					$html .= '</ul>';
+					$html .= '</ul></div>';
 
 				}
 
@@ -688,11 +709,24 @@ class mw_business_details_shortcodes {
 
 	public function mwOpeningTimes( $atts ) {
 		
-		// set up vars
+		// ============================================================
+		// opening times format
+		// ============================================================
+
 		$businessType = get_option( "businessType" );
 		$openingTimesFormat = get_option( "openingTimeFormat" );
 		$twentyFourSeven = get_option( "twentyFourSeven" );
+		
+		// ============================================================
+		// mon-fri times
+		// ============================================================
+
 		$monFriTimes = get_option( "monFriTimes" );
+		
+		// ============================================================
+		// weekday times
+		// ============================================================
+
 		$monday = get_option( "monday" );
 		$tuesday = get_option( "tuesday" );
 		$wednesday = get_option( "wednesday" );
@@ -700,15 +734,27 @@ class mw_business_details_shortcodes {
 		$friday = get_option( "friday" );
 		$saturday = get_option( "saturday" );
 		$sunday = get_option( "sunday" );
+
+		// ============================================================
+		// title
+		// ============================================================
+		
 		if ( isset( $atts['title'] ) ) {
 
 			$mwTitle = $atts['title'];
 
 		}
 
+
+		if ( isset( $atts['schema'] ) ) {
+
+			$mwSchema = $atts['schema'];
+
+		}
+
 		$html = ' ';
 
-		if ( $atts["schema"] === "show" ) {
+		if ( isset($mwSchema) === "show" ) {
 
 			$html .= '<div class="mw-business-details opening-times" itemscope="" itemtype="http://schema.org/'.$businessType.'">';
 
@@ -718,7 +764,7 @@ class mw_business_details_shortcodes {
 
 		}
 
-		if ( $mwTitle ) {
+		if ( isset($mwTitle) ) {
 
 			$html .= '<p class="h3 schemaTitle">'.$mwTitle.'</p>';
 

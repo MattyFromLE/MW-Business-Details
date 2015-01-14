@@ -49,7 +49,7 @@ function initialise() {
 
 	if ( pinOrCustom == 'custom' ) { 
 
-		var image = new google.maps.MarkerImage( ""+ pinImage +"", null, null, null, new google.maps.Size( mw_map_vars.markerWidth, mw_map_vars.markerHeight )); // Create a variable for our marker image.
+		var image = new google.maps.MarkerImage( ""+ pinImage +"", null, null, null, new google.maps.Size( parseInt(mw_map_vars.markerWidth), parseInt(mw_map_vars.markerHeight) )); // Create a variable for our marker image.
 
 	} else {
 
