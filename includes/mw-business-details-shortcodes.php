@@ -479,7 +479,7 @@ class mw_business_details_shortcodes {
 	Second Address
 	---------------------------------------------------------------------------*/
 
-	public function mwSecondAddress( ) {
+	public function mwSecondAddress( $atts ) {
 
 		$addressName = get_option("second_address_name");
 		$streetAddress = get_option( "second_street_address" );
@@ -490,13 +490,13 @@ class mw_business_details_shortcodes {
 		$showSecondAddress = get_option('secondAddress');
 		$businessType = get_option( "businessType" );
 
-		// var_dump($showSecondAddress);
+		// var_dump($streetAddressTwo);
 
 		if ( $showSecondAddress === "1" ) {
 
 			$html = ' ';
 
-			if ( $addressName || $streetAddress || $addressLocality || $addressRegion || $postCode ){ 
+			if ( $addressName || $streetAddres || $streetAddressTwo || $addressLocality || $addressRegion || $postCode ){ 
 
 				$html = '<div  id="'.$atts["id"].'-address" class="mw-business-details" itemscope="" itemtype="http://schema.org/'.$businessType.'">';
 
@@ -505,7 +505,13 @@ class mw_business_details_shortcodes {
 				$html .= '<ul class="address">';
 
 				$html .= '<li>'.$streetAddress.'</li>';
-				$html .= '<li>'.$streetAddressTwo.'</li>';
+
+				if ( $streetAddressTwo ) {
+
+					$html .= '<li>'.$streetAddressTwo.'</li>';
+
+				}
+
 				$html .= '<li>'.$addressLocality.'</li>';
 				$html .= '<li>'.$addressRegion.'</li>';
 				$html .= '<li>'.$postCode.'</li>';
