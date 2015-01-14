@@ -41,13 +41,13 @@ This will pull your address out only. Ensure you set a unique ID for Schema & va
 **echo do_shortcode('[secondAddress]')**
 
 Simply decide if you want to show another address, and use the shortcode to show the address
-# Everything 
-Excludes Opening Times	
+# Everything 	
 **echo do_shortcode('[contactPage id="enter-page-name-for-tracking"]')**
 
 This will pull out: All telephone numbers, full address and social links into a div. Ensure you set a unique ID.
 # Google Map	
 **echo do_shortcode('[mapWrapper]')**
+Control your google map via wordpress!
 
 # Opening Times	
 **echo do_shortcode('[openingTimes]')**
