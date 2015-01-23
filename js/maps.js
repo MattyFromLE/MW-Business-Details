@@ -31,12 +31,12 @@ function initialise() {
 		center: myLatlng, // Centre the Map to our coordinates variable
 		mapTypeId: google.maps.MapTypeId.ROADMAP, // Set the type of Map
 		scrollwheel: false,
-		panControl:true, // Set to false to disable
+		panControl: false, // Set to false to disable
 		panControlOptions: {
 			position: google.maps.ControlPosition.RIGHT_TOP
 		},
 		mapTypeControl:false, // Disable Map/Satellite switch
-		scaleControl:true, // Set to false to hide scale
+		scaleControl: false, // Set to false to hide scale
 		streetViewControl:false, // Set to disable to hide street view
 		overviewMapControl:false, // Set to false to remove overview control
 		rotateControl:false // Set to false to disable rotate control
@@ -134,16 +134,3 @@ function initialise() {
 	map.setOptions({ styles: styles })
 
 }
-
-// FUNCTION TO RUN GOOGLE MAP, IF DIV IS VISABLE
-
-jQuery(document).ready(function($){
-
-	if ($('#map-wrapper').length > 0) {
-
-		initialise();
-
-	}
-
-			
-});

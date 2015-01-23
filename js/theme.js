@@ -1,6 +1,5 @@
 jQuery(document).ready(function( $ ){
 
-
 	// custom uploader
     var custom_uploader;
  
@@ -232,5 +231,105 @@ jQuery(document).ready(function( $ ){
     });
 
     secondAddress();
+
+    // ======================================================================
+    // SHORTCODE GEN
+    // ======================================================================
+
+    var shortcodeGen = $('form#shortcodeGen'),
+        shortcodeNameSelect = $('select#shortcodeGen');
+
+    shortcodeNameSelect.change(function(){
+
+        shortcodeGen.find('input[type="text"]').val('');
+
+        var shortcodeName = $(this).find('option:selected').val();
+
+        if ( shortcodeName == 'addressSchema' || shortcodeName == 'openingTimes' || shortcodeName == 'socialLinks' ) {
+
+            $('.schema, .sctitle, .scid').fadeIn(100);
+
+        } else if ( shortcodeName == 'secondAddress' ) {
+
+            $('.schema').fadeOut(100);
+            $('.sctitle, .scid').fadeIn(100);
+
+        } else if ( shortcodeName == 'companyLogo' || shortcodeName == 'mainNumber' || shortcodeName == 'altNumber' || shortcodeName == 'contactPage' || shortcodeName == 'email' ) {
+
+            $('.sctitle, .schema').fadeOut(100);
+            $('.scid').fadeIn(100);
+
+        } else {
+
+            $('.schema, .sctitle, .scid').fadeOut(100);
+
+        }
+
+    });
+
+    shortcodeGen.on( 'click', '.button', function( event ){
+
+        event.preventDefault();
+
+        // shortcode gen
+        var shortcodeNameFin = $('select#shortcodeGen').find('option:selected').val();
+
+        // schema 
+        var schema = $('select#showSchema').find('option:selected').val();
+      
+        if ( schema ) {
+
+            var schemaResult = ' schema="'+schema+'"';
+
+        } else {
+
+            var schemaResult = '';
+
+        };
+
+        // id
+        var shortcodeID = $('input#shortcodeId').val();
+
+        if ( shortcodeID ) {
+
+            var shortcodeIdResult = ' id="'+shortcodeID+'"';
+
+        } else {
+
+            var shortcodeIdResult = '';
+
+        };
+
+        // title
+        var shortcodeTitle = $('input#shortcodeTitle').val();
+
+        if ( shortcodeTitle ) {
+
+            var shortcodeTitleResult = ' title="'+shortcodeTitle+'"';
+
+        } else {
+
+            var shortcodeTitleResult = '';
+
+        };
+
+        // result
+        var generatedShortcode = '['+shortcodeNameFin+''+shortcodeIdResult+''+schemaResult+''+shortcodeTitleResult+']';
+
+        if ( $('.scid').is(':visible') && $('#shortcodeId').val() == '' ) {
+
+            $('span.required').html('Required!');
+
+        } else {
+
+            $('#generatedShorcode').val(generatedShortcode).parent().fadeIn(100);
+
+        }
+
+        // disable form
+        return false;
+
+    });
+
 
 });

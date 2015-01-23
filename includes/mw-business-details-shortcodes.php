@@ -36,16 +36,17 @@ class mw_business_details_shortcodes {
 	Company Logo
 	---------------------------------------------------------------------------*/
 
-	public function mwCompanyLogo() {
+	public function mwCompanyLogo( $atts ) {
 
 		$logoID = get_option('business_logo_id');
 		$logoSrc = wp_get_attachment_image_src( $logoID, 'mw-logo-size' );
+
 
 		if ( $logoID ) {
 
 			$html = ' ';
 
-			$html .= '<div id="logo" class="logo" itemscope itemtype="http://schema.org/Organization">';
+			$html .= '<div id="'.$atts["id"].'-logo" class="logo" itemscope itemtype="http://schema.org/localBusiness">';
 
 			$html .= '<a itemprop="url" href="'. get_bloginfo('url') .'" rel="home" >';
 			
@@ -490,6 +491,12 @@ class mw_business_details_shortcodes {
 		$showSecondAddress = get_option('secondAddress');
 		$businessType = get_option( "businessType" );
 
+		if ( isset( $atts['title'] ) ) {
+
+			$mwTitle = $atts['title'];
+
+		}
+
 		// var_dump($streetAddressTwo);
 
 		if ( $showSecondAddress === "1" ) {
@@ -498,9 +505,15 @@ class mw_business_details_shortcodes {
 
 			if ( $addressName || $streetAddres || $streetAddressTwo || $addressLocality || $addressRegion || $postCode ){ 
 
-				$html = '<div  id="'.$atts["id"].'-address" class="mw-business-details" itemscope="" itemtype="http://schema.org/'.$businessType.'">';
+				$html = '<div  id="'.$atts["id"].'-second-address" class="mw-business-details" itemscope="" itemtype="http://schema.org/'.$businessType.'">';
 
-				$html .= '<p class="heading">'. $addressName .'</p>';
+				if ( isset($mwTitle) ) {
+
+					$html .= '<p class="schemaTitle h3">'.$mwTitle.'</p>';
+
+				}
+
+				$html .= '<p class="heading name">'. $addressName .'</p>';
 				//address
 				$html .= '<ul class="address">';
 
@@ -538,9 +551,19 @@ class mw_business_details_shortcodes {
 		$telNumber = get_option( "tel_no" );
 		$telNoSpace = preg_replace('/[\s-]+/', '', $telNumber);
 		$telNoBrackets = str_replace(array( '(', ')' ), '', $telNoSpace);
-		
+
+		if ( isset( $atts['icon'] ) ) {
+
+			$icon = '<i class="fa fa-phone"></i>';
+
+		} else {
+
+			$icon = ''; 
+
+		}
+
 		$html = ' ';
-		$html .= '<a href="tel:'.$telNoBrackets.'" title="Call Today" id="'.$atts["id"].'-phone">'.$telNumber.'</a>';
+		$html .= '<a class="mwMainNumber" href="tel:'.$telNoBrackets.'" title="Call Today" id="'.$atts["id"].'-phone">'.$icon.' <span class="calltrack_number">'.$telNumber.'</span></a>';
 		return $html;
 
 	}
@@ -681,10 +704,10 @@ class mw_business_details_shortcodes {
 				}
 
 				// address
-				$html .= '<div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">';
+				$html .= '<div class="address" itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">';
 				
 					$html .= '<p class="h3 schemaTitle">Address</p>';
-					$html .= '<p itemprop="name"><strong>'.$defaultName.'</strong></p>';
+					$html .= '<p class="name" itemprop="name"><strong>'.$defaultName.'</strong></p>';
 					
 					$html .= '<ul class="address">';
 					$html .= '<li itemprop="streetAddress">'.$streetAddress.'</li>';
@@ -697,7 +720,7 @@ class mw_business_details_shortcodes {
 				$html .= '</div>';
 
 				// social
-				$html .= $this->mwSocialLinks( $atts=array( 'title' => 'Socialise', 'id' => $atts['id'], 'class' => 'social-methods' ) );
+				// $html .= $this->mwSocialLinks( $atts=array( 'title' => 'Socialise', 'id' => $atts['id'], 'class' => 'social-methods' ) );
 
 				// opening times
 				$html .= $this->mwOpeningTimes( $atts=array( 'title' => 'Opening Times', 'schema' => 'hide' ) );
