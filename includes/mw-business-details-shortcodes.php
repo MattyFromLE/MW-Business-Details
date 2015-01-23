@@ -418,7 +418,6 @@ class mw_business_details_shortcodes {
 			if ( $companyName ) { $defaultName = $companyName; };
 			$businessType = get_option( "businessType" );
 			$streetAddress = get_option( "street_address" );
-			$streetAddressTwo = get_option( "street_address_two" );
 			$addressLocality = get_option( "address_locality" );
 			$addressRegion = get_option( "address_region" );
 			$postCode = get_option( "post_code" );
@@ -442,7 +441,6 @@ class mw_business_details_shortcodes {
 				
 				$html .= '<ul class="address">';
 				$html .= '<li itemprop="streetAddress">'.$streetAddress.'</li>';
-				$html .= '<li itemprop="streetAddress">'.$streetAddressTwo.'</li>';
 				$html .= '<li itemprop="addressLocality">'.$addressLocality.'</li>';
 				$html .= '<li itemprop="addressRegion">'.$addressRegion.'</li>';
 				$html .= '<li itemprop="postalCode">'.$postCode.'</li>';
@@ -484,7 +482,6 @@ class mw_business_details_shortcodes {
 
 		$addressName = get_option("second_address_name");
 		$streetAddress = get_option( "second_street_address" );
-		$streetAddressTwo = get_option( "second_street_address_two" );
 		$addressLocality = get_option( "second_address_locality" );
 		$addressRegion = get_option( "second_address_region" );
 		$postCode = get_option( "second_post_code" );
@@ -497,13 +494,11 @@ class mw_business_details_shortcodes {
 
 		}
 
-		// var_dump($streetAddressTwo);
-
 		if ( $showSecondAddress === "1" ) {
 
 			$html = ' ';
 
-			if ( $addressName || $streetAddres || $streetAddressTwo || $addressLocality || $addressRegion || $postCode ){ 
+			if ( $addressName || $streetAddres || $addressLocality || $addressRegion || $postCode ){ 
 
 				$html = '<div  id="'.$atts["id"].'-second-address" class="mw-business-details" itemscope="" itemtype="http://schema.org/'.$businessType.'">';
 
@@ -518,12 +513,6 @@ class mw_business_details_shortcodes {
 				$html .= '<ul class="address">';
 
 				$html .= '<li>'.$streetAddress.'</li>';
-
-				if ( $streetAddressTwo ) {
-
-					$html .= '<li>'.$streetAddressTwo.'</li>';
-
-				}
 
 				$html .= '<li>'.$addressLocality.'</li>';
 				$html .= '<li>'.$addressRegion.'</li>';
@@ -650,11 +639,10 @@ class mw_business_details_shortcodes {
 			// address
 			$businessType = get_option( "businessType" );
 			$streetAddress = get_option( "street_address" );
-			$streetAddressTwo = get_option( "street_address_two" );
 			$addressLocality = get_option( "address_locality" );
 			$addressRegion = get_option( "address_region" );
 			$postCode = get_option( "post_code" );
-
+			$googlePlus = get_option( "googlePlus" );
 
 			// contact numbers
 			$mainNumber = get_option( "tel_no" );
@@ -711,11 +699,18 @@ class mw_business_details_shortcodes {
 					
 					$html .= '<ul class="address">';
 					$html .= '<li itemprop="streetAddress">'.$streetAddress.'</li>';
-					$html .= '<li itemprop="streetAddress">'.$streetAddressTwo.'</li>';
 					$html .= '<li itemprop="addressLocality">'.$addressLocality.'</li>';
 					$html .= '<li itemprop="addressRegion">'.$addressRegion.'</li>';
 					$html .= '<li itemprop="postalCode">'.$postCode.'</li>';
 					$html .= '</ul>';
+
+					// if google plus
+					if ( $googlePlus ) {
+						
+						$html .= '<a href="'.$googlePlus.'" target="_blank">Find us on Google+</a>';
+
+					}
+
 
 				$html .= '</div>';
 

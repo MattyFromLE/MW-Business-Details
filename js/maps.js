@@ -134,3 +134,32 @@ function initialise() {
 	map.setOptions({ styles: styles })
 
 }
+
+/* ==================================================
+Google Map Initialise
+load map once you've scrolled to it
+================================================================= */
+
+var mapWrapper = $('#map-wrapper');
+
+if ( mapWrapper.length > 0 ) {
+
+	$(window).scroll(function(){
+
+		var position = $(window).scrollTop(),
+			mapWrapperPosition = mapWrapper.offset().top;
+			mapWrapperDistance = ( mapWrapperPosition - position );
+	   
+	    if ( mapWrapperDistance < position ) { 
+
+			if ( mapWrapper.children().length < 1 ) {
+
+	    		initialise();
+
+	  		} 
+
+	    }
+
+	});
+
+}
