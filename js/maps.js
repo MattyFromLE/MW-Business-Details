@@ -140,26 +140,30 @@ Google Map Initialise
 load map once you've scrolled to it
 ================================================================= */
 
-var mapWrapper = $('#map-wrapper');
+jQuery(document).ready( function($){
 
-if ( mapWrapper.length > 0 ) {
+	var mapWrapper = $('#map-wrapper');
 
-	$(window).scroll(function(){
+	if ( mapWrapper.length > 0 ) {
 
-		var position = $(window).scrollTop(),
-			mapWrapperPosition = mapWrapper.offset().top;
-			mapWrapperDistance = ( mapWrapperPosition - position );
-	   
-	    if ( mapWrapperDistance < position ) { 
+		$(window).scroll(function(){
 
-			if ( mapWrapper.children().length < 1 ) {
+			var position = $(window).scrollTop(),
+				mapWrapperPosition = mapWrapper.offset().top;
+				mapWrapperDistance = ( mapWrapperPosition - position );
+		   
+		    if ( mapWrapperDistance < position ) { 
 
-	    		initialise();
+				if ( mapWrapper.children().length < 1 ) {
 
-	  		} 
+		    		initialise();
 
-	    }
+		  		} 
 
-	});
+		    }
 
-}
+		});
+
+	}
+
+});
