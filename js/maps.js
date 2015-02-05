@@ -142,17 +142,17 @@ load map once you've scrolled to it
 
 jQuery(document).ready( function($){
 
-	var mapWrapper = $('#map-wrapper');
+	$(window).scroll(function(){
 
-	if ( mapWrapper.length > 0 ) {
-
-		$(window).scroll(function(){
-
-			var position = $(window).scrollTop(),
-				mapWrapperPosition = mapWrapper.offset().top;
-				mapWrapperDistance = ( mapWrapperPosition - position );
+		var mapWrapper = $('#map-wrapper'),
+			windowHeight = $(window).height(),
+			mapWrapperPosition = mapWrapper.offset().top,
+			mapWrapperScroll = $(window).scrollTop(),
+			mapWrapperDistance = ( mapWrapperPosition - windowHeight );
+	
+		if ( mapWrapper.length > 0 ) {
 		   
-		    if ( mapWrapperDistance < position ) { 
+		    if ( parseInt(mapWrapperScroll) > parseInt(mapWrapperDistance) ) { 
 
 				if ( mapWrapper.children().length < 1 ) {
 
@@ -162,8 +162,8 @@ jQuery(document).ready( function($){
 
 		    }
 
-		});
+		}
 
-	}
+	});
 
 });

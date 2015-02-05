@@ -390,7 +390,7 @@ class mw_business_details_shortcodes {
 
 		$html .= '<ul class="social-methods" id="'.$atts["id"].'-social-links">';
 
-			if ( $mwTwitter ) { $html .= '<li><a target="_blank" class="twitter" href="'.$mwTwitter.'" title="View '.$defaultName.' on Twitter">  <i class="fa fa-twitter"></i> </a></li>'; }
+			if ( $mwTwitter ) { $html .= '<li><a target="_blank" class="twitter" href="https://twitter.com/'.$mwTwitter.'" title="View '.$defaultName.' on Twitter">  <i class="fa fa-twitter"></i> </a></li>'; }
 
 			if ( $mwFacebook ) { $html .= '<li><a target="_blank" class="facebook" href="'.$mwFacebook.'" title="View '.$defaultName.' on Facebook"> <i class="fa fa-facebook"></i> </a></li>'; }
 
@@ -707,7 +707,7 @@ class mw_business_details_shortcodes {
 					// if google plus
 					if ( $googlePlus ) {
 						
-						$html .= '<a href="'.$googlePlus.'" target="_blank">Find us on Google+</a>';
+						$html .= '<a class="googlePlus" href="'.$googlePlus.'" target="_blank">Find us on Google+</a>';
 
 					}
 
