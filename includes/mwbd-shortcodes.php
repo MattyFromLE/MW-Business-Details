@@ -3,11 +3,14 @@
 class mw_business_details_shortcodes {
 
 	public function __construct() {
+
 		$this->register_shortcodes();
 		add_action('wp_head', array(&$this, 'mw_scripts'), 6);  
+		add_action('wp_head', array(&$this, 'socialIcons'), 6);  
 		add_action('wp_head', array(&$this, 'mw_tracking'));  
 		add_action('wp_head', array(&$this, 'mw_social_styles'));  
-		// add_action('wp_head', array(&$this, 'mw_svgToPng')); 
+		// commented out until we drop IE8 - add_action('wp_head', array(&$this, 'mw_svgToPng')); 
+
 	}
 
 	/*---------------------------------------------------------------------------
@@ -17,11 +20,12 @@ class mw_business_details_shortcodes {
 	public function register_shortcodes(){
 		
 	   add_shortcode('companyLogo', array(&$this, 'mwCompanyLogo'));
-	   add_shortcode('contactPage', array(&$this, 'mwContactPage'));
-	   add_shortcode('addressSchema', array(&$this, 'mwAddressSchema'));
-	   add_shortcode('secondAddress', array(&$this, 'mwSecondAddress'));
+	   add_shortcode('fullSchema', array(&$this, 'mwFullSchema'));
+	   add_shortcode('getAddress', array(&$this, 'mwGetAddress'));
+	   add_shortcode('getNumber', array(&$this, 'mwGetNumber'));
 	   add_shortcode('socialLinks', array(&$this, 'mwSocialLinks'));
 	   add_shortcode('mainNumber', array(&$this, 'mwMainNumber'));
+	   add_shortcode('listNumbers', array(&$this, 'mwListNumbers'));
 	   add_shortcode('altNumber', array(&$this, 'mwAltNumber'));
 	   add_shortcode('faxNumber', array(&$this, 'mwFaxNumber'));
 	   add_shortcode('email', array(&$this, 'mwEmail'));
@@ -40,7 +44,6 @@ class mw_business_details_shortcodes {
 
 		$logoID = get_option('business_logo_id');
 		$logoSrc = wp_get_attachment_image_src( $logoID, 'mw-logo-size' );
-
 
 		if ( $logoID ) {
 
@@ -96,7 +99,7 @@ class mw_business_details_shortcodes {
 		if ( $companyNumber ) {
 	 
 			$html = ' ';
-			$html .= '<p>Company Number: '. $companyNumber .'</p>';
+			$html .= $companyNumber;
 
 			return $html;
 
@@ -109,6 +112,17 @@ class mw_business_details_shortcodes {
 	Google Maps
 	---------------------------------------------------------------------------*/
 
+	public function mwMapWrapper(){
+
+		if ( get_option("mapShow") == "show" ) {
+
+			$html = '<div id="map-wrapper"></div>';
+
+			return $html;	
+
+		}
+
+	}
 
 	public function mw_scripts() {
 
@@ -118,9 +132,13 @@ class mw_business_details_shortcodes {
 		    $customName = get_option( "company_name" );
 
 		    if ( $customName ) { 
+
 		    	$companyName = $customName; 
+
 		    } else { 
+
 		    	$companyName = $defaultName; 
+
 		    }
 		
 			$mapShowPage = get_option( "mapShowPage", array() );
@@ -136,7 +154,7 @@ class mw_business_details_shortcodes {
 				// Enqueue google API for Google Maps
 				wp_register_script( 'add-google-script', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
 				wp_enqueue_script( 'add-google-script' );  
-				wp_register_script( 'maps_scripts', plugin_dir_url( dirname(__FILE__) ) . 'js/min/maps-min.js','','', '' );
+				wp_register_script( 'maps_scripts', plugin_dir_url( dirname(__FILE__) ) . 'js/maps.js','','', '' );
 				wp_enqueue_script( 'maps_scripts' );				
 
 				// enqueue map styles 
@@ -147,18 +165,46 @@ class mw_business_details_shortcodes {
 			// plugin url
 			$pluginUrl = plugins_url();
 
-			// address mame
+			// auto address
 			$addressName = $companyName;
+			$businessAddresses = get_option( 'business_address' );
+            $addressChoice = get_option('addressChoice');
+			$autoAddressArray = array();
+
+			foreach ( $businessAddresses as $businessAddressName => $businessAddressDetails ) {
+
+				if ( $businessAddressDetails['address_name'] == $addressChoice ) {
+
+					$streetAddress = strip_tags($businessAddressDetails['street_address']);
+					$streetAddress = str_replace( ',', '', $streetAddress );
+					$addressLocality = strip_tags($businessAddressDetails['address_locality']);
+					$addressLocality = str_replace( ',', '', $addressLocality );
+					$postCode = strip_tags($businessAddressDetails['postal_code']);
+					$postCode = str_replace( ',', '', $postCode );
+					$autoAddress = $streetAddress .', '. $addressLocality .', '. $postCode;
+
+				} else if ( $addressChoice == 'all' ) {
+
+					$autoAddress[] = array( 
+
+						'name' => $businessAddressName,
+						'address' => $businessAddressDetails['street_address'].', '.$businessAddressDetails['postal_code'].', UK',
+
+					);
+
+				}
+
+			}
 
 			// map position
 			$lat = get_option( "lat" );
 			$long = get_option( "long" );
-			$zoom = get_option( "zoom" );
 
 			// infowindow
 			$showInfoWindow = get_option( "showInfoWindow" );
 
 			// map style
+			$zoom = get_option( "zoom" );
 			$customMap = get_option( "customMap" );
 			$style = get_option( "mapStyle" );
 
@@ -175,44 +221,46 @@ class mw_business_details_shortcodes {
 			// radius
 			$radiusDistance = get_option('radiusDistance');
 
-			if ( $addressName || $lat || $long || $zoom || $customMap || $style || $mapMarker || $pinImage || $radiusDistance || $googleMapsLink ) { 
-
+			if ( $autoAddressArray || $addressName || $lat || $long || $zoom || $customMap || $style || $mapMarker || $pinImage || $radiusDistance || $googleMapsLink ) { 
 
 				wp_localize_script('maps_scripts', 'mw_map_vars', array(
 
-							// plugin url
-							'pluginUrl' => __( $pluginUrl, 'mw-business-details' ),
+						// plugin url
+						'pluginUrl' => __( $pluginUrl, 'mw-business-details' ),
 
-							// address name
-							'addressName' => __( $addressName, 'mw-business-details' ),
+						// address name
+						'addressName' => __( $addressName, 'mw-business-details' ),
+						'autoAddress' => __( $autoAddress, 'mw-business-details' ),
 
-							// map position
-							'lat' => __( $lat, 'mw-business-details'),
-							'long' => __( $long, 'mw-business-details'),
-							'zoom' => __( $zoom, 'mw-business-details'),
+						// map position
+						'lat' => __( $lat, 'mw-business-details'),
+						'long' => __( $long, 'mw-business-details'),
+						'zoom' => __( $zoom, 'mw-business-details'),
 
-							// map style
-							'customMap' => $customMap,
-							'mapStyle' => __( $style, 'mw-business-details' ),
+						// map style
+						'customMap' => $customMap,
+						'mapStyle' => __( $style, 'mw-business-details' ),
 
-							// show info window
-							'showInfoWindow' => __( $showInfoWindow, 'mw-business-details' ),
+						// show info window
+						'showInfoWindow' => __( $showInfoWindow, 'mw-business-details' ),
 
-							// marker
-							'mapMarker' => __( $mapMarker, 'mw-business-details' ),
-							'markerWidth' => __( $markerWidth, 'mw-business-details' ),
-							'markerHeight' => __( $markerHeight, 'mw-business-details' ),
-							'markerHeight' => __( $markerHeight, 'mw-business-details' ),
-							'pin' => $pin,
-							'pinImage' => $pinImage,
+						// marker
+						'mapMarker' => __( $mapMarker, 'mw-business-details' ),
+						'markerWidth' => __( $markerWidth, 'mw-business-details' ),
+						'markerHeight' => __( $markerHeight, 'mw-business-details' ),
+						'markerHeight' => __( $markerHeight, 'mw-business-details' ),
+						'pin' => $pin,
+						'pinImage' => $pinImage,
 
-							// radius
-							'radiusDistance' => __( $radiusDistance, 'mw-business-details' ),
+						// radius
+						'radiusDistance' => __( $radiusDistance, 'mw-business-details' ),
 
-							// google map link
-							'googleMapsLink' => __( $googleMapsLink, 'mw-business-details' ),
+						// google map link
+						'googleMapsLink' => __( $googleMapsLink, 'mw-business-details' ),
 
-						) );
+					) 
+
+				);
 
 			}
 
@@ -220,14 +268,6 @@ class mw_business_details_shortcodes {
 
 	}
 
-	public function mwMapWrapper(){
-		if ( get_option("mapShow") == "show" ) {
-			// map div
-			$html = '<div id="map-wrapper"></div>';
-
-			return $html;	
-		}
-	}
 
 	/*---------------------------------------------------------------------------
 	Social Styles
@@ -292,6 +332,13 @@ class mw_business_details_shortcodes {
 	Social Links
 	---------------------------------------------------------------------------*/
 
+	public function socialIcons() {
+
+		// enqueue map styles 
+		wp_enqueue_style( 'mw-social-icons', plugin_dir_url( dirname(__FILE__) ) .'css/icomoon-style.css','', null );
+		
+	}
+
 	public function mwSocialLinks( $atts ) {
 			
 		// ============================================================
@@ -300,6 +347,7 @@ class mw_business_details_shortcodes {
 
 		$defaultName = get_bloginfo( "name" );
 		$companyName = get_option( "company_name" );
+		$newSocialOptions = get_option( "newSocialNetwork" );
 		
 		if ( $companyName ) { 
 
@@ -378,25 +426,35 @@ class mw_business_details_shortcodes {
 		// social checks
 		// ============================================================
 
-		if ( $mwTwitter || $mwFacebook || $mwLinkedIn || $mwGooglePlus ) { 
+		if ( $mwTwitter || $mwFacebook || $mwLinkedIn || $mwGooglePlus || $newSocialOptions ) { 
 
 		$html .= '<div class="mw-business-details '. $containerClass .'">'; 
 
 		if ( isset($mwTitle) ) {
 
-			$html .= '<p class="h3 schemaTitle">'.$mwTitle.'</p>';
+			$html .= '<p class="schemaTitle">'.$mwTitle.'</p>';
 
 		}
 
 		$html .= '<ul class="social-methods" id="'.$atts["id"].'-social-links">';
 
-			if ( $mwTwitter ) { $html .= '<li><a target="_blank" class="twitter" href="https://twitter.com/'.$mwTwitter.'" title="View '.$defaultName.' on Twitter">  <i class="fa fa-twitter"></i> </a></li>'; }
+			if ( $mwTwitter ) { $html .= '<li><a target="_blank" class="twitter icon-twitter" href="https://twitter.com/'.$mwTwitter.'" title="View '.$defaultName.' on Twitter"></a></li>'; }
 
-			if ( $mwFacebook ) { $html .= '<li><a target="_blank" class="facebook" href="'.$mwFacebook.'" title="View '.$defaultName.' on Facebook"> <i class="fa fa-facebook"></i> </a></li>'; }
+			if ( $mwFacebook ) { $html .= '<li><a target="_blank" class="facebook icon-facebook" href="'.$mwFacebook.'" title="View '.$defaultName.' on Facebook"></a></li>'; }
 
-			if ( $mwLinkedIn ) { $html .= '<li><a target="_blank" class="linkedIn" href="'.$mwLinkedIn.'" title="View '.$defaultName.' on LinkedIn">  <i class="fa fa-linkedin"></i>  </a></li>'; }
+			if ( $mwLinkedIn ) { $html .= '<li><a target="_blank" class="linkedIn icon-linkedin" href="'.$mwLinkedIn.'" title="View '.$defaultName.' on LinkedIn"></a></li>'; }
 
-			if ( $mwGooglePlus) { $html .= '<li><a target="_blank" class="googleplus" href="'.$mwGooglePlus.'" title="View '.$defaultName.' on Google Plus">  <i class="fa fa-google-plus"></i>  </a></li>'; }
+			if ( $mwGooglePlus) { $html .= '<li><a target="_blank" class="googleplus icon-google-plus" href="'.$mwGooglePlus.'" title="View '.$defaultName.' on Google Plus"> </a></li>'; }
+
+			if ( $newSocialOptions ) {
+
+				foreach ( $newSocialOptions as $newSocialOptionName => $newSocialOptionDetails ) {
+
+					$html .= '<li><a target="_blank" class="'.$newSocialOptionDetails['icon'].'" href="'.$newSocialOptionDetails['url'].'" title="View '.$defaultName.' on '.ucwords($newSocialOptionName).'"></a></li>';
+
+				}
+
+			}
 							
 		$html .= '</ul></div> ';
 
@@ -407,129 +465,210 @@ class mw_business_details_shortcodes {
 	}
 
 	/*---------------------------------------------------------------------------
-	Full Address Schema
+	Telephone Numbers
 	---------------------------------------------------------------------------*/
 
-	public function mwAddressSchema( $atts ) {
+	public function mwGetNumber( $atts ) {
 
-			$defaultName = get_bloginfo( "name" );
-			$companyName = get_option( "company_name" );
-			// dynamic naming
-			if ( $companyName ) { $defaultName = $companyName; };
-			$businessType = get_option( "businessType" );
-			$streetAddress = get_option( "street_address" );
-			$addressLocality = get_option( "address_locality" );
-			$addressRegion = get_option( "address_region" );
-			$postCode = get_option( "post_code" );
+		$mainAddresses = get_option('business_address');
+		$html = '';
+		$pageID = $atts['id'];
+		$numberTitle = $atts['title'];
+		
+		$html .= '<div class="mw-business-details numbers">';
 
-			$html = '';
+		if ( $atts['address'] ) {
 
-			if ( isset($atts["schema"] ) === "show" ) {
+			$numberChoice = $atts['address'];
+
+
+			foreach ( $mainAddresses as $mainAddressName => $mainAddressDetails ) {
+
+				$mainAddressNameSlug = $mainAddressName;
+				$mainAddressName = str_replace( '-', ' ', $mainAddressName);
+				$mainAddressName = ucwords($mainAddressName);
+				$telNumber = $mainAddressDetails['telephone_number'];
+
+				if ( $numberChoice == $mainAddressNameSlug ) {
 				
-				$html = '<div  id="'.$atts["id"].'-address" class="mw-business-details" itemscope="" itemtype="http://schema.org/'.$businessType.'">';
-
-
-				$html .= '<div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">';
-				
-				if ( isset($mwTitle) ) {
-
-					$html .= '<p class="h3 schemaTitle">'.$mwTitle.'</p>';
+					$html .= '<a class="phone" itemprop="telephone"href="tel:'.$telNumber.'" title="Call Today" id="'. $pageID .'-'.$mainAddressNameSlug.'-phone"><span>'.$mainAddressName.': </span><span class="calltrack_number">'.$telNumber.'</span></a><br/>';
 
 				}
-
-				$html .= '<p itemprop="name"><strong>'.$defaultName.'</strong></p>';
-				
-				$html .= '<ul class="address">';
-				$html .= '<li itemprop="streetAddress">'.$streetAddress.'</li>';
-				$html .= '<li itemprop="addressLocality">'.$addressLocality.'</li>';
-				$html .= '<li itemprop="addressRegion">'.$addressRegion.'</li>';
-				$html .= '<li itemprop="postalCode">'.$postCode.'</li>';
-				$html .= '</ul></div>';
-				$html .= '</div>';
-
-			} else {
-
-				// address
-				$html .= '<div class="mw-business-details">';
-				
-				if ( isset($mwTitle) ) {
-
-					$html .= '<p class="h3 schemaTitle">'.$mwTitle.'</p>';
-
-				}
-				
-				$html .= '<ul class="address">';
-				$html .= '<li><strong>'.$defaultName.'</strong></li>';
-				$html .= '<li>'.$streetAddress.'</li>';
-				$html .= '<li>'.$addressLocality.'</li>';
-				$html .= '<li>'.$addressRegion.'</li>';
-				$html .= '<li>'.$postCode.'</li>';
-				$html .= '</ul>';
-				$html .= '</div>';
 
 			}
 
-			//closing div
-			return $html;
+		} else {
+
+			foreach ( $mainAddresses as $mainAddressName => $mainAddressDetails ) {
+
+				$mainAddressNameSlug = $mainAddressName;
+				$mainAddressName = str_replace( '-', ' ', $mainAddressName);
+				$mainAddressName = ucwords($mainAddressName);
+				$telNumber = $mainAddressDetails['telephone_number'];
+				$html .= '<a class="phone" itemprop="telephone"href="tel:'.$telNumber.'" title="Call Today" id="'. $pageID .'-'.$mainAddressNameSlug.'-phone"><span>'.$mainAddressName.': </span><span class="calltrack_number">'.$telNumber.'</span></a><br/>';
+
+			}			
+		}
+
+		$html .= '</div>';
+
+		return $html;
 
 	}
 
 	/*---------------------------------------------------------------------------
-	Second Address
+	Full Address Schema
 	---------------------------------------------------------------------------*/
 
-	public function mwSecondAddress( $atts ) {
+	public function mwGetAddress( $atts ) {
 
-		$addressName = get_option("second_address_name");
-		$streetAddress = get_option( "second_street_address" );
-		$addressLocality = get_option( "second_address_locality" );
-		$addressRegion = get_option( "second_address_region" );
-		$postCode = get_option( "second_post_code" );
-		$showSecondAddress = get_option('secondAddress');
-		$businessType = get_option( "businessType" );
+			$defaultName = get_bloginfo( "name" );
+			$companyName = get_option( "company_name" );
+			$businessType = get_option( "businessType" );
+			$mainAddresses = get_option('business_address');
+			$addressChoice = $atts["address"];
 
-		if ( isset( $atts['title'] ) ) {
+			// dynamic naming
+			if ( $companyName ) { 
 
-			$mwTitle = $atts['title'];
+				$defaultName = $companyName; 
 
-		}
+			};
 
-		if ( $showSecondAddress === "1" ) {
+			if ( isset( $atts['title'] ) ){
 
-			$html = ' ';
-
-			if ( $addressName || $streetAddres || $addressLocality || $addressRegion || $postCode ){ 
-
-				$html = '<div  id="'.$atts["id"].'-second-address" class="mw-business-details" itemscope="" itemtype="http://schema.org/'.$businessType.'">';
-
-				if ( isset($mwTitle) ) {
-
-					$html .= '<p class="schemaTitle h3">'.$mwTitle.'</p>';
-
-				}
-
-				$html .= '<p class="heading name">'. $addressName .'</p>';
-				//address
-				$html .= '<ul class="address">';
-
-				$html .= '<li>'.$streetAddress.'</li>';
-
-				$html .= '<li>'.$addressLocality.'</li>';
-				$html .= '<li>'.$addressRegion.'</li>';
-				$html .= '<li>'.$postCode.'</li>';
-				$html .= '</ul>';
-
-				//closing div
-				$html .= '</div>';
+				$mwTitle = $atts['title']; 
 
 			}
 
-			return $html;
+			$mainBusiness = get_option('business_address');
+			$addressCount = '1';
 
-		}
+			$html = '';
+
+			if ( isset($atts["schema"] ) && $atts["schema"] == "show" ) {
+
+				$html = '<div id="'.$atts["id"].'-address" class="mw-business-details mw-business-details-section" itemscope="" itemtype="http://schema.org/'.$businessType.'">';
+				
+				if ( isset($mwTitle) ) {
+
+					$html .= '<p class="schemaTitle">'.$mwTitle.'</p>';
+
+				}
+
+				foreach ( $mainAddresses as $mainAddressName => $mainAddressDetails ) {
+
+					$mainAddressNameSlug = $mainAddressName;
+					$mainAddressName = str_replace( '-', ' ', $mainAddressName);
+					$mainAddressName = ucwords($mainAddressName);
+					$streetAddress = $mainAddressDetails['street_address'];
+					$addressLocality = $mainAddressDetails['address_locality'];
+					$addressRegion = $mainAddressDetails['address_region'];
+					$postCode = $mainAddressDetails['postal_code'];
+					$telNumber = $mainAddressDetails['telephone_number'];
+
+					if ( $addressChoice === $mainAddressNameSlug ) {
+					
+						$html .= '<p class="schemaTitle" itemprop="name"><strong>'.$mainAddressName.'</strong></p>';
+						$html .= '<div class="address" itemscope itemtype="http://schema.org/PostalAddress">';
+						$html .= '<ul>';
+						$html .= '<li itemprop="streetAddress">'.$streetAddress.'</li>';
+						$html .= '<li itemprop="addressLocality">'.$addressLocality.'</li>';
+						$html .= '<li itemprop="addressRegion">'.$addressRegion.'</li>';
+						$html .= '<li itemprop="postalCode">'.$postCode.'</li>';
+						$html .= '</ul>';
+						$html .= '<a class="phone" itemprop="telephone"href="tel:'.$telNumber.'" title="Call Today" id="'.$mainAddressNameSlug.'-phone"><span class="calltrack_number">'.$telNumber.'</span></a>';
+						$html .= '</div>';
+
+					} 
+
+				}
+
+				$html .= "</div>";
+				
+			} else {
+
+				foreach ( $mainAddresses as $mainAddressName => $mainAddressDetails ) {
+
+					$mainAddressNameSlug = $mainAddressName;
+					$mainAddressName = str_replace( '-', ' ', $mainAddressName);
+					$mainAddressName = ucwords($mainAddressName);
+					$streetAddress = $mainAddressDetails['street_address'];
+					$addressLocality = $mainAddressDetails['address_locality'];
+					$addressRegion = $mainAddressDetails['address_region'];
+					$postCode = $mainAddressDetails['postal_code'];
+					$telNumber = $mainAddressDetails['telephone_number'];
+					$telNumberSlug = strtolower( $telNumber );
+					$telNumberSlug = str_replace( ' ', '', $telNumber );
+
+
+					if ( $addressChoice === $mainAddressNameSlug ) {
+					
+						$html .= '<div class="address mw-business-details mw-business-details-section">';
+
+						if ( isset($mwTitle) ) {
+
+							$html .= '<p class="schemaTitle">'.$mwTitle.'</p>';
+
+						}
+
+						$html .= '<p class="schemaTitle"><strong>'.$mainAddressName.'</strong></p>';
+						$html .= '<ul>';
+						$html .= '<li>'.$streetAddress.'</li>';
+						$html .= '<li>'.$addressLocality.'</li>';
+						$html .= '<li>'.$addressRegion.'</li>';
+						$html .= '<li>'.$postCode.'</li>';
+						$html .= '</ul>';
+						$html .= '<a class="phone" href="tel:'.$telNumberSlug.'" title="Call Today" id="'.$mainAddressNameSlug.'-phone"><span class="calltrack_number">Telephone: '.$telNumber.'</span></a>';
+						$html .= '</div>';
+
+					}
+
+				}
+
+			}
+		
+		//closing div
+		return $html;
 
 	}
 
+	/*---------------------------------------------------------------------------
+	List all Numbers
+	---------------------------------------------------------------------------*/
+
+	public function mwListNumbers( ) {
+
+		$addresses = get_option( 'business_address' );
+		$addressChoice = get_option( 'main_address' );
+
+		$html = '';
+		
+		$html .= '<ul class="numbers">';
+
+		foreach ($addresses as $addressName => $addressDetails) {
+
+			if ( $addressName == $addressChoice ) {
+
+				$schema = ' itemprop="telephone"';
+
+			} else {
+
+				$schema = '';
+
+			}
+
+			$telephoneNumberSlug = str_replace( ' ', '', $addressDetails['telephone_number']);
+			
+			$html .= '<li>'.$addressDetails['address_name'].' - <a '.$schema .' class="phone" id="'.$addressName.'-phone" href="tel:'.$telephoneNumberSlug.'">'.$addressDetails['telephone_number'].'</a></li>';
+
+		}
+
+		$html .= '</ul>';
+
+		return $html;
+
+	}
 
 	/*---------------------------------------------------------------------------
 	Main Number
@@ -538,21 +677,11 @@ class mw_business_details_shortcodes {
 	public function mwMainNumber( $atts ) {
 
 		$telNumber = get_option( "tel_no" );
-		$telNoSpace = preg_replace('/[\s-]+/', '', $telNumber);
-		$telNoBrackets = str_replace(array( '(', ')' ), '', $telNoSpace);
-
-		if ( isset( $atts['icon'] ) ) {
-
-			$icon = '<i class="fa fa-phone"></i>';
-
-		} else {
-
-			$icon = ''; 
-
-		}
+		$telNumberSlug = preg_replace('/[\s-]+/', '', $telNumber);
+		$telNumberSlug = str_replace(array( '(', ')' ), '', $telNumberSlug);
 
 		$html = ' ';
-		$html .= '<a class="mwMainNumber" href="tel:'.$telNoBrackets.'" title="Call Today" id="'.$atts["id"].'-phone">'.$icon.' <span class="calltrack_number">'.$telNumber.'</span></a>';
+		$html .= '<a class="mwMainNumber phone" href="tel:'.$telNumberSlug.'" title="Call Today" id="'.$atts["id"].'-phone"> <span class="calltrack_number">'.$telNumber.'</span></a>';
 		return $html;
 
 	}
@@ -565,7 +694,7 @@ class mw_business_details_shortcodes {
 
 		$fax_no = get_option( "fax_no" );
 		$html = ' ';
-		$html .= '<li>'.$fax_no.'</li>';
+		$html .= '<li class="fax">'.$fax_no.'</li>';
 		return $html;
 
 	}
@@ -579,7 +708,7 @@ class mw_business_details_shortcodes {
 		$altNumber = get_option( "alt_no" );
 		$altNoSpace = preg_replace("/[\s-]+/", "", $altNumber);
 		$html = ' ';
-		$html = '<a href="tel:'.$altNoSpace.'" title="Call Today" id="'.$atts["id"].'-alt-phone">'.$altNumber.'</a>';
+		$html = '<a class="phone" href="tel:'.$altNoSpace.'" title="Call Today" id="'.$atts["id"].'-alt-phone">'.$altNumber.'</a>';
 		return $html;
 		
 	}
@@ -605,7 +734,7 @@ class mw_business_details_shortcodes {
 		}
 
 		$html = ' ';
-		$html .= '<a href="mailto:'.$email.'" title="E-Mail Us" id="'.$atts["id"].'-email">'.$email.'</a>';
+		$html .= '<a class="email" href="mailto:'.$email.'" title="E-Mail Us" id="'.$atts["id"].'-email">'.$email.'</a>';
 		return $html;
 		
 	}
@@ -614,7 +743,7 @@ class mw_business_details_shortcodes {
 	Contact Page Schema
 	---------------------------------------------------------------------------*/
 
-	public function mwContactPage( $atts ) {
+	public function mwFullSchema( $atts ) {
 		
 			// company details
 			$defaultName = get_bloginfo( "name" );
@@ -629,6 +758,8 @@ class mw_business_details_shortcodes {
 			// other 
 			$businessType = get_option( "businessType" );
 			$contactPageText = get_option( "mw-contact-text" );
+			$mainBusiness = get_option( 'business_address' );
+			$addressCount = '1';
 			
 			if ( isset( $atts['title'] ) ) {
 
@@ -636,12 +767,6 @@ class mw_business_details_shortcodes {
 
 			}
 
-			// address
-			$businessType = get_option( "businessType" );
-			$streetAddress = get_option( "street_address" );
-			$addressLocality = get_option( "address_locality" );
-			$addressRegion = get_option( "address_region" );
-			$postCode = get_option( "post_code" );
 			$googlePlus = get_option( "googlePlus" );
 
 			// contact numbers
@@ -662,63 +787,77 @@ class mw_business_details_shortcodes {
 
 					if ( isset($mwTitle) ) {
 
-						$html .= '<p class="schemaTitle h3">'.$mwTitle.'</p>';
+						$html .= '<p class="schemaTitle">'.$mwTitle.'</p>';
 
 					}
 
-					$html .= '<div class="mw-business-details contact-details"><ul class="numbers">';
+					if ( $contactPageText ) {
 
-					$html .= '<li><a itemprop="telephone" href="tel:'.$mainNumberNoBrackets.'" title="Call Today" id="contact-phone">'.$mainNumber.'</a></li>';
-				
+						$html .= '<p>'.$contactPageText.'</p>';
+
+					}
+
+					$html .= '<div class="mw-business-details-section contact-details"><p class="schemaTitle">Contact Details</p>';
+
+					$html .= $this->mwListNumbers();
+
 					if ($faxNumber) {
 
-						$html .= '<li>'.$faxNumber.'</li>';
+						$html .= '<p class="fax">'.$faxNumber.'</p>';
+					
 					}
 				
 					if ($altNumber) {
 					
-						$html .= '<li><a href="tel:'.$altNoSpace.'" title="Call Today" id="contact-mobile-phone">'.$altNumber.'</a></li>';
+						$html .= '<p class="phone altnumber"><a href="tel:'.$altNoSpace.'" title="Call Today" id="contact-mobile-phone">'.$altNumber.'</a></p>';
 					
 					}
 
 					if ($emailAddress) {
 					
-						$html .= '<li><a href="mailto:'.$emailAddress.'" title="E-Mail Us Today" id="email">' .$emailAddress.'</a></li>';
+						$html .= '<p class="email"><a href="mailto:'.$emailAddress.'" title="E-Mail Us Today" id="email">' .$emailAddress.'</a></p>';
 					
 					}
 					
-					$html .= '</ul></div>';
+					$html .= '</div>';
 
 				}
 
-				// address
-				$html .= '<div class="address" itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">';
-				
-					$html .= '<p class="h3 schemaTitle">Address</p>';
-					$html .= '<p class="name" itemprop="name"><strong>'.$defaultName.'</strong></p>';
-					
-					$html .= '<ul class="address">';
-					$html .= '<li itemprop="streetAddress">'.$streetAddress.'</li>';
-					$html .= '<li itemprop="addressLocality">'.$addressLocality.'</li>';
-					$html .= '<li itemprop="addressRegion">'.$addressRegion.'</li>';
-					$html .= '<li itemprop="postalCode">'.$postCode.'</li>';
-					$html .= '</ul>';
+				$mainAddresses = get_option('business_address');
+				$addressChoice = get_option('main_address');
 
-					// if google plus
-					if ( $googlePlus ) {
-						
-						$html .= '<a class="googlePlus" href="'.$googlePlus.'" target="_blank">Find us on Google+</a>';
+				foreach ( $mainAddresses as $mainAddressName => $mainAddressDetails ) {
+
+					$mainAddressNameSlug = $mainAddressName;
+					$mainAddressName = str_replace( '-', ' ', $mainAddressName);
+					$mainAddressName = ucwords($mainAddressName);
+					$streetAddress = $mainAddressDetails['street_address'];
+					$addressLocality = $mainAddressDetails['address_locality'];
+					$addressRegion = $mainAddressDetails['address_region'];
+					$postCode = $mainAddressDetails['postal_code'];
+
+					if ( $addressChoice === $mainAddressNameSlug ) {
+					
+						$html .= '<div class="mw-business-details-section address" itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">';
+						$html .= '<p class="schemaTitle" itemprop="name"><strong>'.$defaultName.'</strong></p>';
+						$html .= '<ul>';
+						$html .= '<li itemprop="streetAddress">'.$streetAddress.'</li>';
+						$html .= '<li itemprop="addressLocality">'.$addressLocality.'</li>';
+						$html .= '<li itemprop="addressRegion">'.$addressRegion.'</li>';
+						$html .= '<li itemprop="postalCode">'.$postCode.'</li>';
+						$html .= '</ul>';
+						$html .= '</div>';
 
 					}
 
 
-				$html .= '</div>';
+				}
 
 				// social
 				// $html .= $this->mwSocialLinks( $atts=array( 'title' => 'Socialise', 'id' => $atts['id'], 'class' => 'social-methods' ) );
 
 				// opening times
-				$html .= $this->mwOpeningTimes( $atts=array( 'title' => 'Opening Times', 'schema' => 'hide' ) );
+				$html .= '<div class="mw-business-details-section">'.$this->mwOpeningTimes( $atts=array( 'title' => 'Opening Times', 'schema' => 'hide' ) ).'</div>';
 
 			// closing div
 			$html .= '</div>';
@@ -790,7 +929,7 @@ class mw_business_details_shortcodes {
 
 		if ( isset($mwTitle) ) {
 
-			$html .= '<p class="h3 schemaTitle">'.$mwTitle.'</p>';
+			$html .= '<p class="schemaTitle">'.$mwTitle.'</p>';
 
 		}
 

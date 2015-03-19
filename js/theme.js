@@ -90,10 +90,10 @@ jQuery(document).ready(function( $ ){
 
         }
 
-    // ======================================================================
-    // MAP STYLE
-    // checks map style select button
-    // ======================================================================
+        // ======================================================================
+        // MAP STYLE
+        // checks map style select button
+        // ======================================================================
 
         function mapStyle(){
 
@@ -199,137 +199,144 @@ jQuery(document).ready(function( $ ){
 
         openingTime();
 
-    // ======================================================================
-    // Second Address
-    // checks if second address checkbox is checked
-    // ======================================================================
 
-    function secondAddress() {
 
-        var checkbox = $("input#secondAddress");
+    /* ==================================================
+    address shortcode
+    ================================================== */
 
-        if ( checkbox.is(":checked") ) { 
+    if ( $('.shortcodeGen').attr('id') === 'address' ) {
 
-            $(".secondAddress").each(function( i ){
+        var addressOrNumber = $('select#addressOrNumber').find('option:selected').val();
 
-                $(this).stop().delay( i * 225 ).fadeIn(250);
+        $('select#addressOrNumber').change(function(){
 
-            });
+            var addressOrNumber = $('select#addressOrNumber').find('option:selected').val();
 
-        } else { 
+            if ( addressOrNumber != 'getAddress' ) {
 
-            $(".secondAddress").stop().fadeOut(250);
+                $('.schema').hide();
 
-        }
+            } else {
+
+                $('.schema').show();
+
+            }
+
+        });
+
+        $('body').on( 'click', '#generateBtn', function(){
+
+            var chosenAddress = $('#addressSchemaChoice').find('option:selected').val(),
+                chosenId = $('#shortcodeId').val(),
+                chosenSchema = $('#showSchema').find('option:selected').val(),
+                chosenTitle = $('#shortcodeTitle').val(),
+                addressOrNumber = $('select#addressOrNumber').find('option:selected').val();
+
+            if ( addressOrNumber == 'getNumber' ) { 
+
+                if ( chosenId == '' && chosenTitle == '' ) {
+
+                    alert('Fill in an ID, and Title first.');
+
+                } else {
+
+                    var generatedShortcode = '['+ addressOrNumber +' address="'+chosenAddress+'" id="'+chosenId+'" title="'+chosenTitle+'" ]';
+
+                    $('#generatedShortcode').val( generatedShortcode );
+
+                }
+
+            } else if ( addressOrNumber == 'getAddress' ) {
+
+                if ( chosenId == '' && chosenTitle == '' && chosenSchema == '' ) {
+
+                    alert('Fill in an ID, Schema Choice and Title first.');
+
+                } else {
+
+                    var generatedShortcode = '['+ addressOrNumber +' address="'+chosenAddress+'" id="'+chosenId+'" schema="'+chosenSchema+'" title="'+chosenTitle+'" ]';
+
+                    $('#generatedShortcode').val( generatedShortcode );
+
+                }
+
+            }
+
+        });
+
+    } else if ( $('.shortcodeGen').attr('id') === 'help' ) {
+
+        $('select#shortcodeName').change(function(){
+
+            var shortcodeName = $(this).find('option:selected').val();
+
+            if ( shortcodeName == 'openingTimes' || shortcodeName == 'socialLinks' ) {
+
+                $('.shortcodeTitle, .schema, .shortcodeID').show();
+
+            } else if ( shortcodeName == 'mainNumber' || shortcodeName == 'companyLogo' ) {
+
+                $('.shortcodeID').show();
+
+            } else  {
+
+                $('.shortcodeTitle, .schema, .shortcodeID').hide();   
+
+            }
+
+        });
+
+        var generatedShortcode = '[ '+ shortcodeName +' ]';
+
+        $('body').on( 'click', '#generateBtn', function(){
+
+            var title = '',
+                schema = '',
+                ID = '';
+
+            if ( $('.shortcodeTitle').is(':visible') ) {
+
+                var shortcodeTitle = $('input#shortcodeTitle').val();
+                    title = ' title="' + shortcodeTitle + '"';
+                
+            }
+
+            if ( $('.schema').is(':visible') ) {
+
+                var schemaToggle = $('select#showSchema').find('option:selected').val();
+                    schema = ' schema="'+ schemaToggle +'"'; 
+                
+            }
+
+            if ( $('.shortcodeID').is(':visible') ) {
+
+                var shortcodeID = $('input#shortcodeId').val();
+                    ID = ' id="'+ shortcodeID +'"';
+
+            }
+
+            var shortcodeName = $('select#shortcodeName').find('option:selected').val(),
+                generatedShortcode = '['+ shortcodeName +''+ title +''+ schema +''+ ID +']';
+
+            $('#generatedShortcode').val( generatedShortcode );
+
+        });
 
     }
+ 
+    /* ==================================================
+    address schema
+    show and hide individual addresses
+    ================================================== */
 
-    $("input#secondAddress").click(function(){
+    $('.address-wrapper:first').find('.inside').fadeIn(150);
 
-        secondAddress();
+    $('.address-wrapper').on( 'click', 'h3', function(){
 
-    });
-
-    secondAddress();
-
-    // ======================================================================
-    // SHORTCODE GEN
-    // ======================================================================
-
-    var shortcodeGen = $('form#shortcodeGen'),
-        shortcodeNameSelect = $('select#shortcodeGen');
-
-    shortcodeNameSelect.change(function(){
-
-        shortcodeGen.find('input[type="text"]').val('');
-
-        var shortcodeName = $(this).find('option:selected').val();
-
-        if ( shortcodeName == 'addressSchema' || shortcodeName == 'openingTimes' || shortcodeName == 'socialLinks' ) {
-
-            $('.schema, .sctitle, .scid').fadeIn(100);
-
-        } else if ( shortcodeName == 'secondAddress' ) {
-
-            $('.schema').fadeOut(100);
-            $('.sctitle, .scid').fadeIn(100);
-
-        } else if ( shortcodeName == 'companyLogo' || shortcodeName == 'mainNumber' || shortcodeName == 'altNumber' || shortcodeName == 'contactPage' || shortcodeName == 'email' ) {
-
-            $('.sctitle, .schema').fadeOut(100);
-            $('.scid').fadeIn(100);
-
-        } else {
-
-            $('.schema, .sctitle, .scid').fadeOut(100);
-
-        }
+        $('.inside').fadeOut(0);
+        $(this).next('.inside').fadeToggle(150);
 
     });
-
-    shortcodeGen.on( 'click', '.button', function( event ){
-
-        event.preventDefault();
-
-        // shortcode gen
-        var shortcodeNameFin = $('select#shortcodeGen').find('option:selected').val();
-
-        // schema 
-        var schema = $('select#showSchema').find('option:selected').val();
-      
-        if ( schema ) {
-
-            var schemaResult = ' schema="'+schema+'"';
-
-        } else {
-
-            var schemaResult = '';
-
-        };
-
-        // id
-        var shortcodeID = $('input#shortcodeId').val();
-
-        if ( shortcodeID ) {
-
-            var shortcodeIdResult = ' id="'+shortcodeID+'"';
-
-        } else {
-
-            var shortcodeIdResult = '';
-
-        };
-
-        // title
-        var shortcodeTitle = $('input#shortcodeTitle').val();
-
-        if ( shortcodeTitle ) {
-
-            var shortcodeTitleResult = ' title="'+shortcodeTitle+'"';
-
-        } else {
-
-            var shortcodeTitleResult = '';
-
-        };
-
-        // result
-        var generatedShortcode = '['+shortcodeNameFin+''+shortcodeIdResult+''+schemaResult+''+shortcodeTitleResult+']';
-
-        if ( $('.scid').is(':visible') && $('#shortcodeId').val() == '' ) {
-
-            $('span.required').html('Required!');
-
-        } else {
-
-            $('#generatedShorcode').val(generatedShortcode).parent().fadeIn(100);
-
-        }
-
-        // disable form
-        return false;
-
-    });
-
 
 });
