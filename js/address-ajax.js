@@ -50,23 +50,6 @@ jQuery(document).ready(function($){
 
 	});
 
-	$( 'body' ).on( 'blur', '.new-address input', function(e) {
-	 
-		var complete = true; // Set start of boolean expression
-
-		$(".new-address input").each(function() {
-
-		    complete = complete && $(this).val() !== ""; //If val is empty, the whole expression after the iteration will evaluate to false
-		
-		});
-
-		if (complete) {
-
-			$('.business-save input').prop( 'disabled', false );
-
-		}
-
-	});
 
 	//Main ajax function
     function add_new_address( newAddressName ) {
@@ -92,7 +75,6 @@ jQuery(document).ready(function($){
 
             	$('.business_addresses').append(data);
             	$('#new_business_address').val( '' );
-            	$('.business-save input').prop( 'disabled', true );
 
             },
 

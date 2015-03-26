@@ -1,21 +1,53 @@
 <?php 
 
+/** 
+*
+* ==== KEY ==== 
+* 
+* 1 - Construct
+* 2 - Register Shortcodes
+* 3 - Company Logo
+* 4 - Company Name
+* 5 - Company Number
+* 6 - Google Maps
+* 7 - Phone Click Tracking
+* 8 - Social
+* 9 - Get Number
+* 10 - Get Address
+* 11 - List Numbers
+* 12 - Main Number
+* 13 - Alternative Number
+* 14 - Fax Number
+* 15 - E-Mail Address
+* 16 - Full Schema
+* 17 - Opening Times
+* 
+**/
+
 class mw_business_details_shortcodes {
+
+	/**
+	* Construct
+	*
+	* @since 1.0
+	*/
 
 	public function __construct() {
 
 		$this->register_shortcodes();
-		add_action('wp_head', array(&$this, 'mw_scripts'), 6);  
+		// add_action('wp_head', array(&$this, 'mw_scripts'), 6);  
 		add_action('wp_head', array(&$this, 'socialIcons'), 6);  
 		add_action('wp_head', array(&$this, 'mw_tracking'));  
-		add_action('wp_head', array(&$this, 'mw_social_styles'));  
-		// commented out until we drop IE8 - add_action('wp_head', array(&$this, 'mw_svgToPng')); 
+		add_action('wp_head', array(&$this, 'mw_social_styles'), 6);  
 
 	}
 
-	/*---------------------------------------------------------------------------
-	Shortcodes
-	---------------------------------------------------------------------------*/
+	/**
+	* Register Shortcodes
+	* Function to register our shortcodes
+	*
+	* @since 1.0
+	*/
 
 	public function register_shortcodes(){
 		
@@ -32,13 +64,42 @@ class mw_business_details_shortcodes {
 	   add_shortcode('companyName', array(&$this, 'mwCompanyName'));
 	   add_shortcode('companyNumber', array(&$this, 'mwCompanyNumber'));
 	   add_shortcode('mapWrapper', array(&$this, 'mwMapWrapper'));
+	   add_shortcode('getMap', array(&$this, 'mwGetMap'));
 	   add_shortcode('openingTimes', array(&$this, 'mwOpeningTimes'));
 
 	}
 
-	/*---------------------------------------------------------------------------
-	Company Logo
-	---------------------------------------------------------------------------*/
+	/**
+	* Sluganator
+	* Function to turn string into slugs, or not - as the case may be
+	*
+	* @since 1.0
+	*/
+
+	public function mwSluganator( $string, $slug = 'slug' ) {
+
+		if ( $slug == 'deslug' ) {
+
+			$string = ucwords( $string );
+			$string = str_replace( '-', ' ', $string );
+			return $string;
+
+		} else {
+
+			$string = strtolower( $string );
+			$string = str_replace( ' ', '-', $string );
+			return $string;
+
+		}
+
+	}
+
+	/**
+	* Company Logo
+	* Shortcode for retrieving the company logo
+	*
+	* @since 1.0
+	*/
 
 	public function mwCompanyLogo( $atts ) {
 
@@ -65,9 +126,12 @@ class mw_business_details_shortcodes {
 
 	}
 
-	/*---------------------------------------------------------------------------
-	Company Name
-	---------------------------------------------------------------------------*/
+	/**
+	* Company Name
+	* Shortcode for retrieving the company name
+	*
+	* @since 1.0
+	*/
 
 	public function mwCompanyName() {
 
@@ -88,9 +152,12 @@ class mw_business_details_shortcodes {
 
 	}
 
-	/*---------------------------------------------------------------------------
-	Company Number
-	---------------------------------------------------------------------------*/
+	/**
+	* Company Number
+	* Shortcode for retrieving the company number
+	*
+	* @since 1.0
+	*/
 
 	public function mwCompanyNumber() {
 
@@ -108,186 +175,230 @@ class mw_business_details_shortcodes {
 
 	}
 
-	/*---------------------------------------------------------------------------
-	Google Maps
-	---------------------------------------------------------------------------*/
+	/**
+	* Google Maps
+	* Control google maps found @ mwbd-map-settings
+	*
+	* @since 1.0
+	*/
 
-	public function mwMapWrapper(){
+	public function mwGetMap( $atts ) {
 
-		if ( get_option("mapShow") == "show" ) {
+		/* ==================================================
+		get the company address
+		================================================== */
 
-			$html = '<div id="map-wrapper"></div>';
+		$defaultName = get_bloginfo("name");
+	    $customName = get_option( "company_name" );
 
-			return $html;	
+	    if ( $customName ) { 
+
+	    	$companyName = $customName; 
+
+	    } else { 
+
+	    	$companyName = $defaultName; 
+
+	    }
+
+		$addressName = $companyName;
+	
+		/* ==================================================
+		only enqueue scripts on selected
+		================================================== */
+
+		$mapShowPage = get_option( "mapShowPage", array() );
+
+		foreach ($mapShowPage as $page) {
+		  
+		  $pageID[] = $page;
 
 		}
 
-	}
+		if ( is_page( $pageID ) ) {
 
-	public function mw_scripts() {
+			// Enqueue google API for Google Maps
+			wp_register_script( 'add-google-script', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
+			wp_enqueue_script( 'add-google-script' );  
+			wp_register_script( 'maps_scripts', plugin_dir_url( dirname(__FILE__) ) . 'js/maps.js','','', '' );
+			wp_enqueue_script( 'maps_scripts' );				
 
-		if ( get_option("mapShow") == "show" ) {
+			// enqueue map styles 
+			wp_enqueue_style( 'mw-frontend-theme', plugin_dir_url( dirname(__FILE__) ) .'css/mw-business-details-frontend.css','', null );
 
-			$defaultName = get_bloginfo("name");
-		    $customName = get_option( "company_name" );
+		}
 
-		    if ( $customName ) { 
+		/* ==================================================
+		global vars within maps
+		================================================== */
 
-		    	$companyName = $customName; 
+		$pluginUrl = plugins_url();
+		$businessAddresses = get_option( 'business_address' );
+		$autoAddressArray = array();
 
-		    } else { 
+		/* ==================================================
+		is the address being set in the shortcode?
+		================================================== */
 
-		    	$companyName = $defaultName; 
+		if ( isset($atts['address']) ) {
 
-		    }
+			$mapAddress = $atts['address'];
+
+		} else {
+
+			$mapAddress = get_option('addressChoice');
+
+		}
+
+		if ( isset($atts['address']) && $mapAddress != 'all' ) {
 		
-			$mapShowPage = get_option( "mapShowPage", array() );
-
-			foreach ($mapShowPage as $page) {
-			  
-			  $pageID[] = $page;
-
-			}
-
-			if ( is_page( $pageID ) ) {
-
-				// Enqueue google API for Google Maps
-				wp_register_script( 'add-google-script', 'https://maps.googleapis.com/maps/api/js?sensor=false' );
-				wp_enqueue_script( 'add-google-script' );  
-				wp_register_script( 'maps_scripts', plugin_dir_url( dirname(__FILE__) ) . 'js/maps.js','','', '' );
-				wp_enqueue_script( 'maps_scripts' );				
-
-				// enqueue map styles 
-				wp_enqueue_style( 'mw-frontend-theme', plugin_dir_url( dirname(__FILE__) ) .'css/mw-business-details-frontend.css','', null );
-
-			}
-
-			// plugin url
-			$pluginUrl = plugins_url();
-
-			// auto address
-			$addressName = $companyName;
-			$businessAddresses = get_option( 'business_address' );
-            $addressChoice = get_option('addressChoice');
-			$autoAddressArray = array();
+		// if address is being set in the shortcode, and doesn't equal all, use this map
 
 			foreach ( $businessAddresses as $businessAddressName => $businessAddressDetails ) {
 
-				if ( $businessAddressDetails['address_name'] == $addressChoice ) {
+				if ( $businessAddressName == $mapAddress ) {
 
 					$streetAddress = strip_tags($businessAddressDetails['street_address']);
-					$streetAddress = str_replace( ',', '', $streetAddress );
 					$addressLocality = strip_tags($businessAddressDetails['address_locality']);
 					$addressLocality = str_replace( ',', '', $addressLocality );
 					$postCode = strip_tags($businessAddressDetails['postal_code']);
 					$postCode = str_replace( ',', '', $postCode );
-					$autoAddress = $streetAddress .', '. $addressLocality .', '. $postCode;
-
-				} else if ( $addressChoice == 'all' ) {
-
-					$autoAddress[] = array( 
-
-						'name' => $businessAddressName,
-						'address' => $businessAddressDetails['street_address'].', '.$businessAddressDetails['postal_code'].', UK',
-
-					);
+					$autoAddressArray = $streetAddress .', '. $addressLocality .', '. $postCode;
 
 				}
 
 			}
 
-			// map position
-			$lat = get_option( "lat" );
-			$long = get_option( "long" );
+		} else if ( isset($atts['address']) && $mapAddress == 'all' ) {
+		
+		// if the address is being set in the shortcode but does equal all
 
-			// infowindow
-			$showInfoWindow = get_option( "showInfoWindow" );
+			foreach ( $businessAddresses as $businessAddressName => $businessAddressDetails ) {
 
-			// map style
-			$zoom = get_option( "zoom" );
-			$customMap = get_option( "customMap" );
-			$style = get_option( "mapStyle" );
+				$autoAddressArray[] = array( 
 
-			// marker
-			$mapMarker = get_option( "mapMarker" );
-			$pin = get_option( "pin" );
-			$pinImage = get_option( "pinImage" );
-			$markerWidth = get_option( "markerWidth" );
-			$markerHeight = get_option( "markerHeight" );
-
-			// google plus link
-			$googleMapsLink = get_option( "googleMapsLink" );
-
-			// radius
-			$radiusDistance = get_option('radiusDistance');
-
-			if ( $autoAddressArray || $addressName || $lat || $long || $zoom || $customMap || $style || $mapMarker || $pinImage || $radiusDistance || $googleMapsLink ) { 
-
-				wp_localize_script('maps_scripts', 'mw_map_vars', array(
-
-						// plugin url
-						'pluginUrl' => __( $pluginUrl, 'mw-business-details' ),
-
-						// address name
-						'addressName' => __( $addressName, 'mw-business-details' ),
-						'autoAddress' => __( $autoAddress, 'mw-business-details' ),
-
-						// map position
-						'lat' => __( $lat, 'mw-business-details'),
-						'long' => __( $long, 'mw-business-details'),
-						'zoom' => __( $zoom, 'mw-business-details'),
-
-						// map style
-						'customMap' => $customMap,
-						'mapStyle' => __( $style, 'mw-business-details' ),
-
-						// show info window
-						'showInfoWindow' => __( $showInfoWindow, 'mw-business-details' ),
-
-						// marker
-						'mapMarker' => __( $mapMarker, 'mw-business-details' ),
-						'markerWidth' => __( $markerWidth, 'mw-business-details' ),
-						'markerHeight' => __( $markerHeight, 'mw-business-details' ),
-						'markerHeight' => __( $markerHeight, 'mw-business-details' ),
-						'pin' => $pin,
-						'pinImage' => $pinImage,
-
-						// radius
-						'radiusDistance' => __( $radiusDistance, 'mw-business-details' ),
-
-						// google map link
-						'googleMapsLink' => __( $googleMapsLink, 'mw-business-details' ),
-
-					) 
+					'name' => $businessAddressName,
+					'address' => $businessAddressDetails['street_address'].', '.$businessAddressDetails['postal_code'].', UK',
 
 				);
+			}
 
+		} else if ( !isset($atts['address']) && $mapAddress != 'all' ) {
+		
+		// if the address isn't being set in the shortcode, use the default setting in wp
+
+			foreach ( $businessAddresses as $businessAddressName => $businessAddressDetails ) {
+
+				if ( $businessAddressName == $mapAddress ) {
+
+					$streetAddress = strip_tags($businessAddressDetails['street_address']);
+					$addressLocality = strip_tags($businessAddressDetails['address_locality']);
+					$addressLocality = str_replace( ',', '', $addressLocality );
+					$postCode = strip_tags($businessAddressDetails['postal_code']);
+					$postCode = str_replace( ',', '', $postCode );
+					$autoAddressArray = $streetAddress .', '. $addressLocality .', '. $postCode;
+
+				}
+
+			}
+
+		} else if ( !isset($atts['address']) && $mapAddress == 'all' ) { 
+		
+		// if the address isn't being set in the shortcode and equals all, use the multi map
+
+			foreach ( $businessAddresses as $businessAddressName => $businessAddressDetails ) {
+
+				$autoAddressArray[] = array( 
+
+					'name' => $businessAddressName,
+					'address' => $businessAddressDetails['street_address'].', '.$businessAddressDetails['postal_code'].', UK',
+
+				);
 			}
 
 		}
 
+		// map position
+		$lat = get_option( "lat" );
+		$long = get_option( "long" );
+
+		// infowindow
+		$showInfoWindow = get_option( "showInfoWindow" );
+
+		// map style
+		$zoom = get_option( "zoom" );
+		$customMap = get_option( "customMap" );
+		$style = get_option( "mapStyle" );
+
+		// marker
+		$mapMarker = get_option( "mapMarker" );
+		$pin = get_option( "pin" );
+		$pinImage = get_option( "pinImage" );
+		$markerWidth = get_option( "markerWidth" );
+		$markerHeight = get_option( "markerHeight" );
+
+		// google plus link
+		$googleMapsLink = get_option( "googleMapsLink" );
+
+		// radius
+		$radiusDistance = get_option('radiusDistance');
+
+		if ( $autoAddressArray || $addressName || $lat || $long || $zoom || $customMap || $style || $mapMarker || $pinImage || $radiusDistance || $googleMapsLink ) { 
+
+			wp_localize_script('maps_scripts', 'mw_map_vars', array(
+
+					// plugin url
+					'pluginUrl' => __( $pluginUrl, 'mw-business-details' ),
+
+					// address name
+					'addressName' => __( $addressName, 'mw-business-details' ),
+					'autoAddress' => __( $autoAddressArray, 'mw-business-details' ),
+
+					// map position
+					'lat' => __( $lat, 'mw-business-details'),
+					'long' => __( $long, 'mw-business-details'),
+					'zoom' => __( $zoom, 'mw-business-details'),
+
+					// map style
+					'customMap' => $customMap,
+					'mapStyle' => __( $style, 'mw-business-details' ),
+
+					// show info window
+					'showInfoWindow' => __( $showInfoWindow, 'mw-business-details' ),
+
+					// marker
+					'mapMarker' => __( $mapMarker, 'mw-business-details' ),
+					'markerWidth' => __( $markerWidth, 'mw-business-details' ),
+					'markerHeight' => __( $markerHeight, 'mw-business-details' ),
+					'markerHeight' => __( $markerHeight, 'mw-business-details' ),
+					'pin' => $pin,
+					'pinImage' => $pinImage,
+
+					// radius
+					'radiusDistance' => __( $radiusDistance, 'mw-business-details' ),
+
+					// google map link
+					'googleMapsLink' => __( $googleMapsLink, 'mw-business-details' ),
+
+				) 
+
+			);
+
+		}
+
+		// print the html onto the page for the map to show
+		$html = '<div id="map-wrapper"></div>';
+
+		return $html;	
+
 	}
 
-
-	/*---------------------------------------------------------------------------
-	Social Styles
-	---------------------------------------------------------------------------*/
-
-	public function mw_social_styles() {
-
-		$socialStyles = get_option( 'mwSocialStyles' );
-
-		if ( $socialStyles === 'enqueue' ) {
-
-			wp_enqueue_style( 'mw-social-styles', plugin_dir_url( dirname(__FILE__) ) . 'css/mw-business-details-social-styles.css','', null );
-
-		}	
-
-	}
-
-	/*---------------------------------------------------------------------------
-	Tracking JS
-	---------------------------------------------------------------------------*/
+	/**
+	* Tracking
+	* Control tracking alerts on phone numbers
+	*
+	* @since 1.0
+	*/
 
 	public function mw_tracking(){
 
@@ -313,24 +424,31 @@ class mw_business_details_shortcodes {
 
 	}
 
-	/*---------------------------------------------------------------------------
-	SVG to PNG // when we drop ie8
-	---------------------------------------------------------------------------*/
+	/**
+	* Social Styles
+	* Function to enqueue social styles
+	*
+	* @since 1.0
+	*/
 
-	// public function mw_svgToPng(){
+	public function mw_social_styles() {
 
-	// 	echo '<!--[if lt IE 9]>
+		$socialStyles = get_option( 'mwSocialStyles' );
 
-	// 	    <script src="'. plugins_url('/mw-business-details/js/min/svg-to-png-min.js') .'"></script>
+		if ( $socialStyles === 'enqueue' ) {
 
-	// 	<![endif]-->';
+			wp_enqueue_style( 'mw-social-styles', plugin_dir_url( dirname(__FILE__) ) . 'css/mw-business-details-social-styles.css','', null );
 
-	// }
+		}	
 
+	}
 
-	/*---------------------------------------------------------------------------
-	Social Links
-	---------------------------------------------------------------------------*/
+	/**
+	* Social Icons
+	* Enqueue SVG Icons for Social Icons
+	*
+	* @since 1.0
+	*/
 
 	public function socialIcons() {
 
@@ -338,6 +456,13 @@ class mw_business_details_shortcodes {
 		wp_enqueue_style( 'mw-social-icons', plugin_dir_url( dirname(__FILE__) ) .'css/icomoon-style.css','', null );
 		
 	}
+
+	/**
+	* Social Links
+	* Controls social links frontend html
+	*
+	* @since 1.0
+	*/
 
 	public function mwSocialLinks( $atts ) {
 			
@@ -464,9 +589,12 @@ class mw_business_details_shortcodes {
 			
 	}
 
-	/*---------------------------------------------------------------------------
-	Telephone Numbers
-	---------------------------------------------------------------------------*/
+	/**
+	* Get Number
+	* Dynamically retrieve a telephone number
+	*
+	* @since 1.0
+	*/
 
 	public function mwGetNumber( $atts ) {
 
@@ -475,12 +603,12 @@ class mw_business_details_shortcodes {
 		$pageID = $atts['id'];
 		$numberTitle = $atts['title'];
 		
-		$html .= '<div class="mw-business-details numbers">';
+		$html .= '<div class="mw-business-details mw-business-details-section numbers">';
+		$html .= '<p class="h3 schemaTitle">'. $numberTitle .'</p>';
 
 		if ( $atts['address'] ) {
 
 			$numberChoice = $atts['address'];
-
 
 			foreach ( $mainAddresses as $mainAddressName => $mainAddressDetails ) {
 
@@ -516,9 +644,12 @@ class mw_business_details_shortcodes {
 
 	}
 
-	/*---------------------------------------------------------------------------
-	Full Address Schema
-	---------------------------------------------------------------------------*/
+	/**
+	* Get Address
+	* Shortcode to retrieve a custom address
+	*
+	* @since 1.0
+	*/
 
 	public function mwGetAddress( $atts ) {
 
@@ -526,7 +657,16 @@ class mw_business_details_shortcodes {
 			$companyName = get_option( "company_name" );
 			$businessType = get_option( "businessType" );
 			$mainAddresses = get_option('business_address');
-			$addressChoice = $atts["address"];
+
+			if ( isset($atts["address"]) ) {
+
+				$addressChoice = $atts["address"];
+
+			} else {
+
+				$addressChoice = $this->mwSluganator( get_option( 'addressChoice' ), 'slug' );
+
+			}
 
 			// dynamic naming
 			if ( $companyName ) { 
@@ -559,13 +699,13 @@ class mw_business_details_shortcodes {
 				foreach ( $mainAddresses as $mainAddressName => $mainAddressDetails ) {
 
 					$mainAddressNameSlug = $mainAddressName;
-					$mainAddressName = str_replace( '-', ' ', $mainAddressName);
-					$mainAddressName = ucwords($mainAddressName);
+					$mainAddressName = $this->mwSluganator( $mainAddressName, 'deslug' );
 					$streetAddress = $mainAddressDetails['street_address'];
 					$addressLocality = $mainAddressDetails['address_locality'];
 					$addressRegion = $mainAddressDetails['address_region'];
 					$postCode = $mainAddressDetails['postal_code'];
 					$telNumber = $mainAddressDetails['telephone_number'];
+					$telNumberSlug = str_replace( ' ', '', $telNumber );
 
 					if ( $addressChoice === $mainAddressNameSlug ) {
 					
@@ -577,7 +717,7 @@ class mw_business_details_shortcodes {
 						$html .= '<li itemprop="addressRegion">'.$addressRegion.'</li>';
 						$html .= '<li itemprop="postalCode">'.$postCode.'</li>';
 						$html .= '</ul>';
-						$html .= '<a class="phone" itemprop="telephone"href="tel:'.$telNumber.'" title="Call Today" id="'.$mainAddressNameSlug.'-phone"><span class="calltrack_number">'.$telNumber.'</span></a>';
+						$html .= '<a class="phone" itemprop="telephone"href="tel:'.$telNumberSlug.'" title="Call Today" id="'.$mainAddressNameSlug.'-phone"><span class="calltrack_number">'.$telNumber.'</span></a>';
 						$html .= '</div>';
 
 					} 
@@ -591,16 +731,13 @@ class mw_business_details_shortcodes {
 				foreach ( $mainAddresses as $mainAddressName => $mainAddressDetails ) {
 
 					$mainAddressNameSlug = $mainAddressName;
-					$mainAddressName = str_replace( '-', ' ', $mainAddressName);
-					$mainAddressName = ucwords($mainAddressName);
+					$mainAddressName = $this->mwSluganator( $mainAddressName, 'deslug' );
 					$streetAddress = $mainAddressDetails['street_address'];
 					$addressLocality = $mainAddressDetails['address_locality'];
 					$addressRegion = $mainAddressDetails['address_region'];
 					$postCode = $mainAddressDetails['postal_code'];
 					$telNumber = $mainAddressDetails['telephone_number'];
-					$telNumberSlug = strtolower( $telNumber );
 					$telNumberSlug = str_replace( ' ', '', $telNumber );
-
 
 					if ( $addressChoice === $mainAddressNameSlug ) {
 					
@@ -633,9 +770,12 @@ class mw_business_details_shortcodes {
 
 	}
 
-	/*---------------------------------------------------------------------------
-	List all Numbers
-	---------------------------------------------------------------------------*/
+	/**
+	* List Numbers
+	* Function to list all numbers
+	*
+	* @since 1.0
+	*/
 
 	public function mwListNumbers( ) {
 
@@ -670,9 +810,12 @@ class mw_business_details_shortcodes {
 
 	}
 
-	/*---------------------------------------------------------------------------
-	Main Number
-	---------------------------------------------------------------------------*/
+	/**
+	* Main Number
+	* Shortcode to show the main number
+	*
+	* @since 1.0
+	*/
 
 	public function mwMainNumber( $atts ) {
 
@@ -686,22 +829,12 @@ class mw_business_details_shortcodes {
 
 	}
 
-	/*---------------------------------------------------------------------------
-	Fax Number
-	---------------------------------------------------------------------------*/
-
-	public function mwFaxNumber( ) {
-
-		$fax_no = get_option( "fax_no" );
-		$html = ' ';
-		$html .= '<li class="fax">'.$fax_no.'</li>';
-		return $html;
-
-	}
-
-	/*---------------------------------------------------------------------------
-	Alternative Number
-	---------------------------------------------------------------------------*/
+	/**
+	* Alternative Number
+	* Shortcode to show the alternative number
+	*
+	* @since 1.0
+	*/
 
 	public function mwAltNumber( $atts ) {
 
@@ -713,9 +846,28 @@ class mw_business_details_shortcodes {
 		
 	}
 
-	/*---------------------------------------------------------------------------
-	E-Mail
-	---------------------------------------------------------------------------*/
+	/**
+	* Fax Number
+	* Shortcode to show a fax number
+	*
+	* @since 1.0
+	*/
+
+	public function mwFaxNumber( ) {
+
+		$fax_no = get_option( "fax_no" );
+		$html = ' ';
+		$html .= '<li class="fax">'.$fax_no.'</li>';
+		return $html;
+
+	}
+
+	/**
+	* E-Mail
+	* Shortcode to show the company e-mail
+	*
+	* @since 1.0
+	*/
 
 	public function mwEmail( $atts ) {
 
@@ -739,9 +891,12 @@ class mw_business_details_shortcodes {
 		
 	}
 
-	/*---------------------------------------------------------------------------
-	Contact Page Schema
-	---------------------------------------------------------------------------*/
+	/**
+	* Full Schema
+	* Shortcode to show the full schema
+	*
+	* @since 1.0
+	*/
 
 	public function mwFullSchema( $atts ) {
 		
@@ -853,9 +1008,6 @@ class mw_business_details_shortcodes {
 
 				}
 
-				// social
-				// $html .= $this->mwSocialLinks( $atts=array( 'title' => 'Socialise', 'id' => $atts['id'], 'class' => 'social-methods' ) );
-
 				// opening times
 				$html .= '<div class="mw-business-details-section">'.$this->mwOpeningTimes( $atts=array( 'title' => 'Opening Times', 'schema' => 'hide' ) ).'</div>';
 
@@ -866,9 +1018,12 @@ class mw_business_details_shortcodes {
 		
 	}
 
-	/*---------------------------------------------------------------------------
-	Opening Times
-	---------------------------------------------------------------------------*/
+	/**
+	* Opening Times
+	* Shortcode to show the opening times
+	*
+	* @since 1.0
+	*/
 
 	public function mwOpeningTimes( $atts ) {
 		
@@ -917,13 +1072,13 @@ class mw_business_details_shortcodes {
 
 		$html = ' ';
 
-		if ( isset($mwSchema) === "show" ) {
+		if ( isset($mwSchema) && $mwSchema === "show" ) {
 
 			$html .= '<div class="mw-business-details opening-times" itemscope="" itemtype="http://schema.org/'.$businessType.'">';
 
 		} else {
 
-			$html .= '<div class="mw-business-details opening-times" >';
+			$html .= '<div class="mw-business-details opening-times">';
 
 		}
 
